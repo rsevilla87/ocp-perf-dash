@@ -1,0 +1,615 @@
+/* Global styles */
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    box-sizing: border-box;
+}
+
+:root {
+    --openshift-red: #ee0000;
+    --openshift-dark-red: #cc0000;
+    --openshift-blue: #0066cc;
+    --openshift-dark-blue: #004499;
+    --openshift-gray: #f5f5f5;
+    --openshift-dark-gray: #363636;
+    --openshift-light-gray: #f8f9fa;
+    --text-primary: #1e1e1e;
+    --text-secondary: #6c757d;
+    --border-color: #dee2e6;
+    --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    --transition: all 0.2s ease-in-out;
+}
+
+body {
+    font-family: 'Red Hat Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--openshift-light-gray);
+    color: var(--text-primary);
+    transform: translateZ(0);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.logo {
+    height: 60px;
+    width: auto;
+    display: block;
+    background-color: transparent;
+}
+
+.logo:empty,
+.logo[src=""],
+.logo[src*="404"] {
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 2px dashed rgba(255, 255, 255, 0.5);
+    position: relative;
+}
+
+.logo:empty::after,
+.logo[src=""]::after,
+.logo[src*="404"]::after {
+    content: "OpenShift";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.title-section {
+    flex: 1;
+}
+
+.main-title {
+    font-family: 'Red Hat Display', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-top: 1rem;
+}
+
+.subtitle {
+    font-size: 1.1rem;
+    margin: 0.5rem 0 0 0;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+/* Main content */
+.main-content {
+    padding: 3rem 0;
+    min-height: calc(100vh - 200px);
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.section-title {
+    font-family: 'Red Hat Display', sans-serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.section-description {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin: 0;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Search container */
+.search-container {
+    margin: 2rem 0;
+}
+
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1rem;
+    transition: var(--transition);
+    max-width: 600px;
+}
+
+.search-box:focus-within {
+    box-shadow: var(--shadow-md);
+    border-color: var(--openshift-blue);
+}
+
+.search-icon {
+    color: var(--text-secondary);
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 1rem;
+    color: var(--text-primary);
+    background: transparent;
+}
+
+.search-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.clear-search {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: var(--transition);
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    flex-shrink: 0;
+}
+
+.clear-search:hover {
+    background: var(--openshift-gray);
+    color: var(--text-primary);
+}
+
+.clear-search:active {
+    transform: scale(0.95);
+}
+
+.no-results {
+    margin-top: 2rem;
+}
+
+/* Jobs grid */
+.jobs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.job-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.job-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.job-link {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    text-decoration: none;
+    color: inherit;
+    gap: 1rem;
+}
+
+.job-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--openshift-blue), var(--openshift-dark-blue));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.job-content {
+    flex: 1;
+}
+
+.job-name {
+    font-family: 'Red Hat Display', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.job-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.run-count {
+    color: var(--text-secondary);
+    font-size: 0.6rem;
+    font-weight: 500;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.status-active {
+    background-color: #d1f2dd;
+    color: #0f5132;
+}
+
+.job-arrow {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    transition: var(--transition);
+}
+
+.job-card:hover .job-arrow {
+    color: var(--openshift-red);
+    transform: translateX(4px);
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    margin: 2rem 0;
+}
+
+.empty-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--openshift-gray);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem auto;
+    color: var(--text-secondary);
+}
+
+.empty-state h3 {
+    font-family: 'Red Hat Display', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.empty-state p {
+    color: var(--text-secondary);
+    margin: 0;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Footer */
+.footer {
+    background-color: var(--openshift-dark-gray);
+    color: white;
+    padding: 1.5rem 0;
+    text-align: center;
+    margin-top: auto;
+}
+
+.footer p {
+    margin: 0;
+    opacity: 0.8;
+}
+
+a {
+    color: var(--openshift-blue);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+a:hover {
+    color: var(--openshift-dark-blue);
+    text-decoration: underline;
+}
+
+/* Job detail page styles */
+.controls {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    margin: 2rem 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.metric-selector {
+    font-family: 'Red Hat Display', sans-serif;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.controls select {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: white;
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.controls select:focus {
+    outline: none;
+    border-color: var(--openshift-blue);
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.chart-display {
+    margin: 2rem 0;
+    will-change: auto;
+    transform: translateZ(0);
+}
+
+.chart-container {
+    height: 600px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem 1.5rem 3rem 1.5rem;
+    margin-bottom: 2rem;
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transition: var(--transition);
+    width: 100%;
+}
+
+.chart-container:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.chart-container h3 {
+    font-family: 'Red Hat Display', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+.chart-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.zoom-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: white;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.zoom-btn:hover {
+    background: var(--openshift-gray);
+    border-color: var(--openshift-blue);
+}
+
+.zoom-btn:active {
+    background: var(--openshift-blue);
+    color: white;
+}
+
+.chart-container canvas {
+    cursor: crosshair;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+/* Selection box styling for drag-to-zoom */
+.chartjs-render-monitor {
+    cursor: crosshair !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .main-title {
+        font-size: 2rem;
+    }
+
+    .logo-section {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+
+    .search-box {
+        max-width: 100%;
+    }
+
+    .jobs-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .job-link {
+        padding: 1rem;
+    }
+
+    .chart-container {
+        height: 450px;
+    }
+
+    .container {
+        padding: 0 15px;
+    }
+
+    .main-content {
+        padding: 2rem 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-title {
+        font-size: 1.75rem;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+    }
+
+    .logo {
+        height: 48px;
+    }
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    color: var(--openshift-blue);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.back-link:hover {
+    color: var(--openshift-dark-blue);
+    transform: translateX(-2px);
+}
+
+.back-link svg {
+    transition: var(--transition);
+}
+
+.back-link:hover svg {
+    transform: translateX(-2px);
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: black;
+}
+
+.summary-section {
+    margin: 15px 0;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+}
+
+.summary-title {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 14x;
+}
+
+.summary-item {
+    margin: 5px 0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.summary-key {
+    font-weight: 500;
+    color: #555;
+}
+
+.summary-value {
+    color: #333;
+    word-break: break-all;
+}

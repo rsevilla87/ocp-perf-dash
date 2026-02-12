@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenShift Performance Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700&family=Red+Hat+Text:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="/static/img/openshift-logo.png" alt="OpenShift" class="logo">
+                <div class="title-section">
+                    <h1 class="main-title">Performance Dashboard</h1>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+
+            {{if .}}
+                <div class="search-container">
+                    <div class="search-box">
+                        <svg class="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M19 19L14.65 14.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <input type="text" id="jobSearch" class="search-input" placeholder="Search jobs..." autocomplete="off">
+                        <button id="clearSearch" class="clear-search" style="display: none;" aria-label="Clear search">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="jobs-grid" id="jobsGrid">
+                    {{range .}}
+                    <div class="job-card" data-job-name="{{.Name}}">
+                        <a href="/job/{{.Name}}" class="job-link">
+                            <div class="job-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9 17H7V10H9V17ZM13 17H11V7H13V17ZM17 17H15V13H17V17ZM19.5 19.1H4.5V5H19.5V19.1ZM19.5 3H4.5C3.4 3 2.5 3.9 2.5 5V19.1C2.5 20.2 3.4 21.1 4.5 21.1H19.5C20.6 21.1 21.5 20.2 21.5 19.1V5C21.5 3.9 20.6 3 19.5 3Z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                            <div class="job-content">
+                                <div class="job-name">{{.Name}}</div>
+                                <div class="job-stats">
+                                    <span class="run-count">{{len .Runs}} runs</span>
+                                </div>
+                            </div>
+                            <div class="job-arrow">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </a>
+                    </div>
+                    {{end}}
+                </div>
+            {{else}}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 17H7V10H9V17ZM13 17H11V7H13V17ZM17 17H15V13H17V17ZM19.5 19.1H4.5V5H19.5V19.1ZM19.5 3H4.5C3.4 3 2.5 3.9 2.5 5V19.1C2.5 20.2 3.4 21.1 4.5 21.1H19.5C20.6 21.1 21.5 20.2 21.5 19.1V5C21.5 3.9 20.6 3 19.5 3Z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <p>No jobs were found in the results directory. Start running performance tests to see them here.</p>
+                </div>
+            {{end}}
+        </div>
+    </main>
+    <script>
+        // Real-time job search functionality
+        (function() {
+            const searchInput = document.getElementById('jobSearch');
+            const clearBtn = document.getElementById('clearSearch');
+            const jobsGrid = document.getElementById('jobsGrid');
+            
+            if (!searchInput) return;
+            
+            function filterJobs() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                const jobCards = document.querySelectorAll('.job-card');
+                let visibleCount = 0;
+                
+                jobCards.forEach(card => {
+                    const jobName = card.getAttribute('data-job-name').toLowerCase();
+                    const matches = jobName.includes(searchTerm);
+                    
+                    if (matches) {
+                        card.style.display = '';
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                
+                // Show/hide clear button
+                if (searchTerm.length > 0) {
+                    clearBtn.style.display = 'flex';
+                } else {
+                    clearBtn.style.display = 'none';
+                }
+                
+                // Show empty state if no results
+                let emptyState = document.querySelector('.no-results');
+                if (visibleCount === 0 && searchTerm.length > 0) {
+                    if (!emptyState) {
+                        emptyState = document.createElement('div');
+                        emptyState.className = 'no-results empty-state';
+                        emptyState.innerHTML = `
+                            <div class="empty-icon">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9 17H7V10H9V17ZM13 17H11V7H13V17ZM17 17H15V13H17V17ZM19.5 19.1H4.5V5H19.5V19.1ZM19.5 3H4.5C3.4 3 2.5 3.9 2.5 5V19.1C2.5 20.2 3.4 21.1 4.5 21.1H19.5C20.6 21.1 21.5 20.2 21.5 19.1V5C21.5 3.9 20.6 3 19.5 3Z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                            <p>No jobs found matching "${searchTerm}"</p>
+                        `;
+                        if (jobsGrid && jobsGrid.parentNode) {
+                            jobsGrid.parentNode.insertBefore(emptyState, jobsGrid.nextSibling);
+                        }
+                    }
+                    emptyState.style.display = 'block';
+                } else if (emptyState) {
+                    emptyState.style.display = 'none';
+                }
+            }
+            
+            searchInput.addEventListener('input', filterJobs);
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    searchInput.value = '';
+                    filterJobs();
+                    searchInput.focus();
+                }
+            });
+            
+            clearBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                filterJobs();
+                searchInput.focus();
+            });
+        })();
+    </script>
+</body>
+</html>

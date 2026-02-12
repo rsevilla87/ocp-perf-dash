@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Job.Name}} - OpenShift Performance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700&family=Red+Hat+Text:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="/static/img/openshift-logo.png" alt="OpenShift" class="logo">
+                <div class="title-section">
+                    <h1 class="main-title">{{.Job.Name}}</h1>
+                    <p class="subtitle">Performance metrics and analysis over time</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="back-link">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <a href="/">Back to Jobs</a>
+            </div>
+
+    <div class="controls">
+        <label for="quantileSelect" class="metric-selector">Select Quantile:</label>
+        <select id="quantileSelect" onchange="updateQuantileDisplay()">
+        </select>
+
+        <label for="metricSelect" class="metric-selector">Select Metric:</label>
+        <select id="metricSelect" onchange="updateCharts()">
+            <option value="P99" selected>P99</option>
+            <option value="P95">P95</option>
+            <option value="P50">P50</option>
+            <option value="min">Min</option>
+            <option value="max">Max</option>
+            <option value="avg">Average</option>
+        </select>
+    </div>
+
+    <div class="chart-display">
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3 id="chartTitle"></h3>
+                <div class="chart-controls">
+                    <button id="resetZoom" class="zoom-btn">Reset Zoom</button>
+                </div>
+            </div>
+            <canvas id="mainChart" width="800" height="400"></canvas>
+        </div>
+    </div>
+
+    <!-- Modal for Job Summary -->
+    <div id="jobSummaryModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Job Execution Details</h2>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 OpenShift Performance Dashboard. Built for monitoring cluster performance.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/charts.js"></script>
+    <script>
+        // Set chart data for JavaScript
+        window.chartData = {{.ChartDataJSON}};
+
+        // Initialize when DOM is ready (Firefox-compatible)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                if (typeof initializePage === 'function') {
+                    initializePage();
+                }
+            });
+        } else {
+            // DOM already loaded
+            if (typeof initializePage === 'function') {
+                initializePage();
+            }
+        }
+    </script>
+</body>
+</html>
