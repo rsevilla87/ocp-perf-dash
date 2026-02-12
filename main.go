@@ -45,9 +45,17 @@ type Config struct {
 }
 
 type Job struct {
-	Name string
-	Runs []Run
-	Path string
+	Name      string
+	Runs      []Run
+	Path      string
+	Workloads []Workload
+}
+
+type Workload struct {
+	Name     string
+	Path     string
+	Job      string
+	RunCount int
 }
 
 type Run struct {
@@ -153,21 +161,103 @@ func (c *Config) jobListHandler(w http.ResponseWriter, r *http.Request) {
 func (c *Config) jobDetailHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	fmt.Println("Job detail handler called for", r.URL.Path)
-	jobName := strings.TrimPrefix(r.URL.Path, "/job/")
+	path := strings.TrimPrefix(r.URL.Path, "/job/")
+	pathParts := strings.Split(path, "/")
+
+	var jobName, workloadName string
+	if len(pathParts) >= 1 {
+		jobName = pathParts[0]
+	}
+	if len(pathParts) >= 2 {
+		workloadName = pathParts[1]
+	}
 
 	job := Job{
 		Name: jobName,
 	}
 	job.Path = filepath.Join(c.resultsDir, jobName)
-	job.Runs, err = loadRuns(job.Path)
+
+	// Load workloads for this job
+	job.Workloads, err = loadWorkloads(job.Path, jobName)
 	if err != nil {
-		fmt.Printf("Error loading runs for job %s: %v\n", jobName, err)
-		http.Error(w, fmt.Sprintf("Error loading runs for job %s: %v", jobName, err), http.StatusNotFound)
+		fmt.Printf("Error loading workloads for job %s: %v\n", jobName, err)
+	}
+
+	// Determine the path to load runs from
+	var runsPath string
+	var displayName string
+	if workloadName != "" {
+		runsPath = filepath.Join(job.Path, workloadName)
+		displayName = fmt.Sprintf("%s / %s", jobName, workloadName)
+	} else {
+		// If no workload specified, check if there are workloads
+		// If there's only one workload, redirect to it
+		if len(job.Workloads) == 1 {
+			http.Redirect(w, r, fmt.Sprintf("/job/%s/%s", jobName, job.Workloads[0].Name), http.StatusFound)
+			return
+		}
+		// Otherwise, show workload selection (we'll handle this in the template)
+		runsPath = job.Path
+		displayName = jobName
+	}
+
+	job.Runs, err = loadRuns(runsPath)
+	if err != nil {
+		fmt.Printf("Error loading runs for path %s: %v\n", runsPath, err)
+		// If we can't load runs, it might be because we're at the job level
+		// and need to show workload selection
+		if workloadName == "" && len(job.Workloads) > 0 {
+			// Show workload selection page
+			type TemplateData struct {
+				Job           Job
+				Workloads     []Workload
+				ChartData     []ChartData
+				ChartDataJSON template.JS
+			}
+
+			chartDataJSON, _ := json.Marshal([]ChartData{})
+
+			data := TemplateData{
+				Job:           job,
+				Workloads:     job.Workloads,
+				ChartData:     []ChartData{},
+				ChartDataJSON: template.JS(chartDataJSON),
+			}
+
+			templateFS, err := fs.Sub(templateFiles, "templates")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			templateData, err := fs.ReadFile(templateFS, "job_detail.html")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			t, err := template.New("job_detail.html").Parse(string(templateData))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			err = t.Execute(w, data)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			return
+		}
+		http.Error(w, fmt.Sprintf("Error loading runs for path %s: %v", runsPath, err), http.StatusNotFound)
 		return
 	}
+
 	chartData := prepareChartData(&job)
 	type TemplateData struct {
 		Job           Job
+		WorkloadName  string
+		DisplayName   string
 		ChartData     []ChartData
 		ChartDataJSON template.JS
 	}
@@ -176,6 +266,8 @@ func (c *Config) jobDetailHandler(w http.ResponseWriter, r *http.Request) {
 
 	data := TemplateData{
 		Job:           job,
+		WorkloadName:  workloadName,
+		DisplayName:   displayName,
 		ChartData:     chartData,
 		ChartDataJSON: template.JS(chartDataJSON),
 	}
@@ -219,11 +311,71 @@ func loadJobs(resultsDir string) ([]Job, error) {
 				Name: entry.Name(),
 				Path: filepath.Join(resultsDir, entry.Name()),
 			}
+			// Load workloads for each job
+			job.Workloads, _ = loadWorkloads(job.Path, job.Name)
 			jobs = append(jobs, job)
 		}
 	}
 
 	return jobs, nil
+}
+
+func loadWorkloads(jobPath string, jobName string) ([]Workload, error) {
+	entries, err := os.ReadDir(jobPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var workloads []Workload
+	for _, entry := range entries {
+		if entry.IsDir() {
+			// Check if this directory contains metrics-* subdirectories (indicating it's a workload)
+			workloadPath := filepath.Join(jobPath, entry.Name())
+			subEntries, err := os.ReadDir(workloadPath)
+			if err != nil {
+				continue
+			}
+			// Check if any subdirectory starts with "metrics-"
+			isWorkload := false
+			for _, subEntry := range subEntries {
+				if subEntry.IsDir() && strings.HasPrefix(subEntry.Name(), "metrics-") {
+					isWorkload = true
+					break
+				}
+			}
+			if isWorkload {
+				// Count runs without loading all the data
+				runCount := countRuns(workloadPath)
+				workloads = append(workloads, Workload{
+					Name:     entry.Name(),
+					Path:     workloadPath,
+					Job:      jobName,
+					RunCount: runCount,
+				})
+			}
+		}
+	}
+
+	sort.Slice(workloads, func(i, j int) bool {
+		return workloads[i].Name < workloads[j].Name
+	})
+
+	return workloads, nil
+}
+
+func countRuns(workloadPath string) int {
+	entries, err := os.ReadDir(workloadPath)
+	if err != nil {
+		return 0
+	}
+
+	count := 0
+	for _, entry := range entries {
+		if entry.IsDir() && strings.HasPrefix(entry.Name(), "metrics-") {
+			count++
+		}
+	}
+	return count
 }
 
 func loadRuns(jobPath string) ([]Run, error) {
@@ -237,25 +389,30 @@ func loadRuns(jobPath string) ([]Run, error) {
 	for _, entry := range entries {
 		if entry.IsDir() {
 			runPath := filepath.Join(jobPath, entry.Name())
-			measurements, err := loadMeasurements(runPath)
-			if err != nil {
-				fmt.Printf("Error loading job data: %s %v\n", runPath, err)
-				continue
-			}
+			// Check if this is a metrics-* directory (a run) or a workload directory
+			// Workload directories contain metrics-* subdirectories
+			if strings.HasPrefix(entry.Name(), "metrics-") {
+				// This is a run directory
+				measurements, err := loadMeasurements(runPath)
+				if err != nil {
+					fmt.Printf("Error loading job data: %s %v\n", runPath, err)
+					continue
+				}
 
-			jobSummary, err := loadJobSummary(runPath)
-			if err != nil {
-				fmt.Printf("Error loading job summary: %s %v\n", runPath, err)
-				continue
-			}
+				jobSummary, err := loadJobSummary(runPath)
+				if err != nil {
+					fmt.Printf("Error loading job summary: %s %v\n", runPath, err)
+					continue
+				}
 
-			run := Run{
-				Measurements: measurements,
-				Summary:      jobSummary,
-				Path:         runPath,
-			}
+				run := Run{
+					Measurements: measurements,
+					Summary:      jobSummary,
+					Path:         runPath,
+				}
 
-			runs = append(runs, run)
+				runs = append(runs, run)
+			}
 		}
 	}
 
