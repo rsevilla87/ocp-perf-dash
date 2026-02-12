@@ -589,13 +589,14 @@ a:hover {
     padding: 10px;
     background-color: #f9f9f9;
     border-radius: 5px;
+    font-size: 0.8rem;
 }
 
 .summary-title {
     font-weight: bold;
     color: #333;
     margin-bottom: 10px;
-    font-size: 14x;
+    font-size: 0.8rem;
 }
 
 .summary-item {
@@ -607,9 +608,11 @@ a:hover {
 .summary-key {
     font-weight: 500;
     color: #555;
+    font-size: 0.8rem;
 }
 
 .summary-value {
     color: #333;
     word-break: break-all;
+    font-size: 0.8rem;
 }

@@ -39,8 +39,6 @@ type Measurement struct {
 	Metadata     any       `json:"metadata"`
 }
 
-type JobSummary map[string]any
-
 type Config struct {
 	resultsDir string
 	port       int
@@ -317,7 +315,6 @@ func loadJobSummary(runPath string) (burner.JobSummary, error) {
 	if len(summaries) == 0 {
 		return summaries[0], fmt.Errorf("no job summary found")
 	}
-
 	return summaries[0], nil
 }
 
