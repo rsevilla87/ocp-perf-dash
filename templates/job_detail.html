@@ -119,16 +119,10 @@
         </div>
     </main>
 
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2024 OpenShift Performance Dashboard. Built for monitoring cluster performance.</p>
-        </div>
-    </footer>
-
     <script src="/static/js/charts.js"></script>
     <script>
         // Set chart data for JavaScript
-        window.chartData = {{.ChartDataJSON}};
+        window.chartData = JSON.parse('{{.ChartDataJSON}}');
 
         // Initialize when DOM is ready (Firefox-compatible)
         if (document.readyState === 'loading') {

@@ -2,7 +2,6 @@
 let chartData = [];
 let currentChart = null;
 let selectedQuantile = 0;
-let zoomJustHappened = false;
 
 // Initialize the page
 function initializePage() {
@@ -50,6 +49,8 @@ function createChart(quantileData) {
 
     // Limit to most recent 100 datapoints
     const limitedDatapoints = quantileData.Datapoints.slice(-100);
+    // Store the starting index of the limited dataset for proper mapping
+    const startIndex = Math.max(0, quantileData.Datapoints.length - 100);
 
     // Track mouse events to distinguish clicks from drags
     let mouseDownTime = 0;
@@ -75,19 +76,17 @@ function createChart(quantileData) {
     });
 
     canvas.addEventListener('mouseup', function(e) {
-        if (mouseDownTime > 0) {
-            const clickDuration = Date.now() - mouseDownTime;
-            if (clickDuration > 200 || wasDrag) { // Long press or drag
-                zoomJustHappened = true;
-            }
+        // Reset drag flag after a short delay to allow onClick to check it
+        setTimeout(() => {
+            wasDrag = false;
             mouseDownTime = 0;
-        }
+        }, 50);
     });
 
     return new Chart(ctx, {
         type: 'line',
         data: {
-            labels: limitedDatapoints.map(d => new Date(d.Timestamp).toLocaleString()),
+            labels: limitedDatapoints.map(d => new Date(d.Timestamp).toLocaleDateString()),
             datasets: [{
                 label: quantileData.QuantileName + ' (' + selectedMetric + ')',
                 data: limitedDatapoints.map(d => d[metricKey] || 0),
@@ -175,15 +174,24 @@ function createChart(quantileData) {
             },
             onClick: (event, elements) => {
                 // Only show job summary if it was a click (not a drag/zoom)
-                if (!zoomJustHappened && elements.length > 0) {
-                    const elementIndex = elements[0].index;
-                    const datapoint = chartData[selectedQuantile].Datapoints[elementIndex];
-                    showJobSummary(datapoint.JobSummary, datapoint.Timestamp);
+                // Check if this was a zoom operation by checking if mouse was moved significantly
+                const clickDuration = mouseDownTime > 0 ? Date.now() - mouseDownTime : 0;
+                const isZoomOperation = wasDrag || clickDuration > 200;
+                if (!isZoomOperation && elements.length > 0) {
+                    // Use Chart.js's method to get the element at the click position
+                    // This works correctly even after zooming
+                    const chart = event.chart;
+                    const activePoints = chart.getElementsAtEventForMode(event.native, 'nearest', { intersect: true }, true);
+                    if (activePoints.length > 0) {
+                        const pointIndex = activePoints[0].index;
+                        // The data array corresponds to limitedDatapoints
+                        // After zoom, Chart.js still uses the same data array, just shows a subset
+                        if (pointIndex >= 0 && pointIndex < limitedDatapoints.length) {
+                            const datapoint = limitedDatapoints[pointIndex];
+                            showJobSummary(datapoint.JobSummary, datapoint.Timestamp);
+                        }
+                    }
                 }
-                // Reset flag after a short delay
-                setTimeout(() => {
-                    zoomJustHappened = false;
-                }, 100);
             }
         }
     });

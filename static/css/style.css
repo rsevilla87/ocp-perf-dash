@@ -325,19 +325,6 @@ body {
     margin-right: auto;
 }
 
-/* Footer */
-.footer {
-    background-color: var(--openshift-dark-gray);
-    color: white;
-    padding: 1.5rem 0;
-    text-align: center;
-    margin-top: auto;
-}
-
-.footer p {
-    margin: 0;
-    opacity: 0.8;
-}
 
 a {
     color: var(--openshift-blue);
@@ -718,17 +705,22 @@ a:hover {
 .summary-item {
     margin: 5px 0;
     display: flex;
-    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
 }
 
 .summary-key {
     font-weight: 500;
     color: #555;
     font-size: 0.8rem;
+    min-width: 150px;
+    flex-shrink: 0;
 }
 
 .summary-value {
     color: #333;
-    word-break: break-all;
+    word-break: break-word;
     font-size: 0.8rem;
+    flex: 1;
+    text-align: left;
 }
