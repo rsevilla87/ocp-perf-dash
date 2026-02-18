@@ -491,6 +491,30 @@ a:hover {
     box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
 }
 
+/* Metric chart groups */
+.metric-chart-group {
+    margin: 3rem 0;
+    padding: 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.metric-chart-group:first-child {
+    margin-top: 2rem;
+}
+
+.metric-group-title {
+    font-family: 'Red Hat Display', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
 .chart-display {
     margin: 2rem 0;
     will-change: auto;

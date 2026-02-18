@@ -78,33 +78,39 @@
             </div>
             {{end}}
 
-    <div class="controls">
-        <label for="quantileSelect" class="metric-selector">Select Quantile:</label>
-        <select id="quantileSelect" onchange="updateQuantileDisplay()">
-        </select>
+            {{range $index, $metricGroup := .MetricGroups}}
+            <div class="metric-chart-group" data-metric-index="{{$index}}">
+                <h2 class="metric-group-title">{{$metricGroup.MetricName}}</h2>
+                
+                <div class="controls">
+                    <label for="quantileSelect-{{$index}}" class="metric-selector">Select Quantile:</label>
+                    <select id="quantileSelect-{{$index}}" class="quantile-select" data-metric-index="{{$index}}" onchange="updateQuantileDisplay({{$index}})">
+                    </select>
 
-        <label for="metricSelect" class="metric-selector">Select Metric:</label>
-        <select id="metricSelect" onchange="updateCharts()">
-            <option value="P99" selected>P99</option>
-            <option value="P95">P95</option>
-            <option value="P50">P50</option>
-            <option value="min">Min</option>
-            <option value="max">Max</option>
-            <option value="avg">Average</option>
-        </select>
-    </div>
+                    <label for="metricSelect-{{$index}}" class="metric-selector">Select Metric:</label>
+                    <select id="metricSelect-{{$index}}" class="metric-select" data-metric-index="{{$index}}" onchange="updateChart({{$index}})">
+                        <option value="P99" selected>P99</option>
+                        <option value="P95">P95</option>
+                        <option value="P50">P50</option>
+                        <option value="min">Min</option>
+                        <option value="max">Max</option>
+                        <option value="avg">Average</option>
+                    </select>
+                </div>
 
-    <div class="chart-display">
-        <div class="chart-container">
-            <div class="chart-header">
-                <h3 id="chartTitle"></h3>
-                <div class="chart-controls">
-                    <button id="resetZoom" class="zoom-btn">Reset Zoom</button>
+                <div class="chart-display">
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3 class="chart-title" id="chartTitle-{{$index}}"></h3>
+                            <div class="chart-controls">
+                                <button class="zoom-btn reset-zoom" data-metric-index="{{$index}}">Reset Zoom</button>
+                            </div>
+                        </div>
+                        <canvas class="chart-canvas" id="chart-{{$index}}" width="800" height="400"></canvas>
+                    </div>
                 </div>
             </div>
-            <canvas id="mainChart" width="800" height="400"></canvas>
-        </div>
-    </div>
+            {{end}}
             {{end}}
 
     <!-- Modal for Job Summary -->
@@ -121,8 +127,8 @@
 
     <script src="/static/js/charts.js"></script>
     <script>
-        // Set chart data for JavaScript
-        window.chartData = JSON.parse('{{.ChartDataJSON}}');
+        // Set metric groups data for JavaScript
+        window.metricGroups = {{.MetricGroupsJSON}};
 
         // Initialize when DOM is ready (Firefox-compatible)
         if (document.readyState === 'loading') {

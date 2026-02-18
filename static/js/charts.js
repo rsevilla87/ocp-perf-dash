@@ -1,25 +1,33 @@
 // Global variables
-let chartData = [];
-let currentChart = null;
-let selectedQuantile = 0;
+let metricGroups = [];
+let charts = {}; // Map of metricIndex -> Chart instance
+let selectedQuantiles = {}; // Map of metricIndex -> selected quantile index
+let selectedMetrics = {}; // Map of metricIndex -> selected metric
 
 // Initialize the page
 function initializePage() {
-    if (typeof window.chartData !== 'undefined' && window.chartData && window.chartData.length > 0) {
-        chartData = window.chartData;
-        initializeQuantileDropdown();
-        initializeChart();
+    if (typeof window.metricGroups !== 'undefined' && window.metricGroups && window.metricGroups.length > 0) {
+        metricGroups = window.metricGroups;
+        initializeAllCharts();
         setupModal();
     } else {
-        console.error('No chart data available or data is empty');
+        console.error('No metric groups data available or data is empty');
     }
 }
 
-function initializeQuantileDropdown() {
-    const quantileSelect = document.getElementById('quantileSelect');
+function initializeAllCharts() {
+    metricGroups.forEach((metricGroup, metricIndex) => {
+        initializeQuantileDropdown(metricIndex, metricGroup);
+        initializeChart(metricIndex, metricGroup);
+        setupZoomControls(metricIndex);
+    });
+}
+
+function initializeQuantileDropdown(metricIndex, metricGroup) {
+    const quantileSelect = document.getElementById(`quantileSelect-${metricIndex}`);
 
     if (!quantileSelect) {
-        console.error('quantileSelect element not found');
+        console.error(`quantileSelect-${metricIndex} element not found`);
         return;
     }
 
@@ -27,19 +35,27 @@ function initializeQuantileDropdown() {
     quantileSelect.innerHTML = '';
 
     // Add options for each quantile
-    chartData.forEach((chart, index) => {
+    metricGroup.Charts.forEach((chart, index) => {
         const option = document.createElement('option');
         option.value = index;
         option.textContent = chart.QuantileName;
         if (index === 0) option.selected = true;
         quantileSelect.appendChild(option);
     });
+
+    // Initialize selected quantile
+    selectedQuantiles[metricIndex] = 0;
 }
 
-function createChart(quantileData) {
-    const canvas = document.getElementById('mainChart');
+function createChart(metricIndex, quantileData, metricGroup) {
+    const canvas = document.getElementById(`chart-${metricIndex}`);
+    if (!canvas) {
+        console.error(`Chart canvas chart-${metricIndex} not found`);
+        return null;
+    }
+
     const ctx = canvas.getContext('2d');
-    const selectedMetric = document.getElementById('metricSelect').value;
+    const selectedMetric = selectedMetrics[metricIndex] || 'P99';
     let metricKey = selectedMetric;
 
     // Handle different metric naming
@@ -49,8 +65,6 @@ function createChart(quantileData) {
 
     // Limit to most recent 100 datapoints
     const limitedDatapoints = quantileData.Datapoints.slice(-100);
-    // Store the starting index of the limited dataset for proper mapping
-    const startIndex = Math.max(0, quantileData.Datapoints.length - 100);
 
     // Track mouse events to distinguish clicks from drags
     let mouseDownTime = 0;
@@ -198,54 +212,72 @@ function createChart(quantileData) {
 }
 
 // Initialize single chart
-function initializeChart() {
-    if (chartData.length > 0) {
-        selectedQuantile = 0;
-        updateChart();
+function initializeChart(metricIndex, metricGroup) {
+    if (metricGroup.Charts.length > 0) {
+        selectedQuantiles[metricIndex] = 0;
+        selectedMetrics[metricIndex] = 'P99';
+        updateChart(metricIndex);
     }
 }
 
-function updateChart() {
+function updateChart(metricIndex) {
     // Destroy existing chart if it exists
-    if (currentChart) {
-        currentChart.destroy();
+    if (charts[metricIndex]) {
+        charts[metricIndex].destroy();
     }
 
-    // Create new chart with current quantile data
-    if (chartData[selectedQuantile]) {
-        currentChart = createChart(chartData[selectedQuantile]);
-        updateChartTitle();
-        setupZoomControls();
+    const metricGroup = metricGroups[metricIndex];
+    if (!metricGroup || !metricGroup.Charts || metricGroup.Charts.length === 0) {
+        return;
+    }
+
+    const quantileIndex = selectedQuantiles[metricIndex] || 0;
+    const quantileData = metricGroup.Charts[quantileIndex];
+
+    if (quantileData) {
+        charts[metricIndex] = createChart(metricIndex, quantileData, metricGroup);
+        updateChartTitle(metricIndex);
     }
 }
 
-function setupZoomControls() {
-    const resetZoomBtn = document.getElementById('resetZoom');
-    if (resetZoomBtn && currentChart) {
+function setupZoomControls(metricIndex) {
+    const resetZoomBtn = document.querySelector(`.reset-zoom[data-metric-index="${metricIndex}"]`);
+    if (resetZoomBtn && charts[metricIndex]) {
         resetZoomBtn.onclick = function() {
-            currentChart.resetZoom();
+            if (charts[metricIndex]) {
+                charts[metricIndex].resetZoom();
+            }
         };
     }
 }
 
-function updateChartTitle() {
-    const chartTitle = document.getElementById('chartTitle');
-    const selectedMetric = document.getElementById('metricSelect').value;
+function updateChartTitle(metricIndex) {
+    const chartTitle = document.getElementById(`chartTitle-${metricIndex}`);
+    const metricGroup = metricGroups[metricIndex];
+    const quantileIndex = selectedQuantiles[metricIndex] || 0;
+    const selectedMetric = selectedMetrics[metricIndex] || 'P99';
 
-    if (chartTitle && chartData[selectedQuantile]) {
-        chartTitle.textContent = chartData[selectedQuantile].QuantileName + ' (' + selectedMetric + ')';
+    if (chartTitle && metricGroup && metricGroup.Charts[quantileIndex]) {
+        chartTitle.textContent = metricGroup.Charts[quantileIndex].QuantileName + ' (' + selectedMetric + ')';
     }
 }
 
-function updateQuantileDisplay() {
-    const quantileSelect = document.getElementById('quantileSelect');
-    selectedQuantile = parseInt(quantileSelect.value);
-    updateChart();
+function updateQuantileDisplay(metricIndex) {
+    const quantileSelect = document.getElementById(`quantileSelect-${metricIndex}`);
+    if (quantileSelect) {
+        selectedQuantiles[metricIndex] = parseInt(quantileSelect.value);
+        updateChart(metricIndex);
+    }
 }
 
-function updateCharts() {
-    updateChart();
-}
+// Handle metric selection change
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('metric-select')) {
+        const metricIndex = parseInt(e.target.getAttribute('data-metric-index'));
+        selectedMetrics[metricIndex] = e.target.value;
+        updateChart(metricIndex);
+    }
+});
 
 function showJobSummary(jobSummary, timestamp) {
     const modal = document.getElementById('jobSummaryModal');
@@ -314,5 +346,3 @@ function setupModal() {
         }
     }
 }
-
-// Page initialization is called directly from HTML after chart data is set

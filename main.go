@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kube-burner/kube-burner/pkg/burner"
+	"github.com/kube-burner/kube-burner/v2/pkg/burner"
 )
 
 //go:embed static
@@ -68,6 +68,11 @@ type ChartData struct {
 	MetricName   string
 	QuantileName string
 	Datapoints   []DataPoint
+}
+
+type MetricGroup struct {
+	MetricName string
+	Charts     []ChartData
 }
 
 type DataPoint struct {
@@ -200,76 +205,27 @@ func (c *Config) jobDetailHandler(w http.ResponseWriter, r *http.Request) {
 		runsPath = job.Path
 		displayName = jobName
 	}
-
-	job.Runs, err = loadRuns(runsPath)
-	if err != nil {
-		fmt.Printf("Error loading runs for path %s: %v\n", runsPath, err)
-		// If we can't load runs, it might be because we're at the job level
-		// and need to show workload selection
-		if workloadName == "" && len(job.Workloads) > 0 {
-			// Show workload selection page
-			type TemplateData struct {
-				Job           Job
-				Workloads     []Workload
-				ChartData     []ChartData
-				ChartDataJSON template.JS
-			}
-
-			chartDataJSON, _ := json.Marshal([]ChartData{})
-
-			data := TemplateData{
-				Job:           job,
-				Workloads:     job.Workloads,
-				ChartData:     []ChartData{},
-				ChartDataJSON: template.JS(chartDataJSON),
-			}
-
-			templateFS, err := fs.Sub(templateFiles, "templates")
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			templateData, err := fs.ReadFile(templateFS, "job_detail.html")
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			t, err := template.New("job_detail.html").Parse(string(templateData))
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			err = t.Execute(w, data)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			return
-		}
-		http.Error(w, fmt.Sprintf("Error loading runs for path %s: %v", runsPath, err), http.StatusNotFound)
-		return
+	if workloadName != "" {
+		job.Runs, err = loadRuns(runsPath)
 	}
 
-	chartData := prepareChartData(&job)
+	metricGroups := prepareChartData(&job)
 	type TemplateData struct {
-		Job           Job
-		WorkloadName  string
-		DisplayName   string
-		ChartData     []ChartData
-		ChartDataJSON template.JS
+		Job              Job
+		WorkloadName     string
+		DisplayName      string
+		MetricGroups     []MetricGroup
+		MetricGroupsJSON template.JS
 	}
 
-	chartDataJSON, _ := json.Marshal(chartData)
+	metricGroupsJSON, _ := json.Marshal(metricGroups)
 
 	data := TemplateData{
-		Job:           job,
-		WorkloadName:  workloadName,
-		DisplayName:   displayName,
-		ChartData:     chartData,
-		ChartDataJSON: template.JS(chartDataJSON),
+		Job:              job,
+		WorkloadName:     workloadName,
+		DisplayName:      displayName,
+		MetricGroups:     metricGroups,
+		MetricGroupsJSON: template.JS(metricGroupsJSON),
 	}
 
 	templateFS, err := fs.Sub(templateFiles, "templates")
@@ -329,36 +285,17 @@ func loadWorkloads(jobPath string, jobName string) ([]Workload, error) {
 	var workloads []Workload
 	for _, entry := range entries {
 		if entry.IsDir() {
-			// Check if this directory contains metrics-* subdirectories (indicating it's a workload)
 			workloadPath := filepath.Join(jobPath, entry.Name())
-			subEntries, err := os.ReadDir(workloadPath)
-			if err != nil {
-				continue
-			}
-			// Check if any subdirectory starts with "metrics-"
-			isWorkload := false
-			for _, subEntry := range subEntries {
-				if subEntry.IsDir() && strings.HasPrefix(subEntry.Name(), "metrics-") {
-					isWorkload = true
-					break
-				}
-			}
-			if isWorkload {
-				// Count runs without loading all the data
-				runCount := countRuns(workloadPath)
-				workloads = append(workloads, Workload{
-					Name:     entry.Name(),
-					Path:     workloadPath,
-					Job:      jobName,
-					RunCount: runCount,
-				})
-			}
+			// Count runs without loading all the data
+			runCount := countRuns(workloadPath)
+			workloads = append(workloads, Workload{
+				Name:     entry.Name(),
+				Path:     workloadPath,
+				Job:      jobName,
+				RunCount: runCount,
+			})
 		}
 	}
-
-	sort.Slice(workloads, func(i, j int) bool {
-		return workloads[i].Name < workloads[j].Name
-	})
 
 	return workloads, nil
 }
@@ -368,14 +305,7 @@ func countRuns(workloadPath string) int {
 	if err != nil {
 		return 0
 	}
-
-	count := 0
-	for _, entry := range entries {
-		if entry.IsDir() && strings.HasPrefix(entry.Name(), "metrics-") {
-			count++
-		}
-	}
-	return count
+	return len(entries)
 }
 
 func loadRuns(jobPath string) ([]Run, error) {
@@ -389,37 +319,26 @@ func loadRuns(jobPath string) ([]Run, error) {
 	for _, entry := range entries {
 		if entry.IsDir() {
 			runPath := filepath.Join(jobPath, entry.Name())
-			// Check if this is a metrics-* directory (a run) or a workload directory
-			// Workload directories contain metrics-* subdirectories
-			if strings.HasPrefix(entry.Name(), "metrics-") {
-				// This is a run directory
-				measurements, err := loadMeasurements(runPath)
-				if err != nil {
-					fmt.Printf("Error loading job data: %s %v\n", runPath, err)
-					continue
-				}
-
-				jobSummary, err := loadJobSummary(runPath)
-				if err != nil {
-					fmt.Printf("Error loading job summary: %s %v\n", runPath, err)
-					continue
-				}
-
-				run := Run{
-					Measurements: measurements,
-					Summary:      jobSummary,
-					Path:         runPath,
-				}
-
-				runs = append(runs, run)
+			measurements, err := loadMeasurements(runPath)
+			if err != nil {
+				fmt.Printf("Error loading job data: %s %v\n", runPath, err)
+				continue
 			}
+
+			jobSummary, err := loadJobSummary(runPath)
+			if err != nil {
+				fmt.Printf("Error loading job summary: %s %v\n", runPath, err)
+				continue
+			}
+
+			run := Run{
+				Measurements: measurements,
+				Summary:      jobSummary,
+				Path:         runPath,
+			}
+			runs = append(runs, run)
 		}
 	}
-
-	sort.Slice(runs, func(i, j int) bool {
-		return runs[i].Summary.Timestamp.Before(runs[j].Summary.Timestamp)
-	})
-
 	return runs, nil
 }
 
@@ -461,27 +380,35 @@ func loadJobSummary(runPath string) (burner.JobSummary, error) {
 
 	data, err := os.ReadFile(summaryPath)
 	if err != nil {
-		return summaries[0], err
+		return burner.JobSummary{}, err
 	}
 
 	err = json.Unmarshal(data, &summaries)
 	if err != nil {
-		return summaries[0], err
+		return burner.JobSummary{}, err
 	}
 
 	if len(summaries) == 0 {
-		return summaries[0], fmt.Errorf("no job summary found")
+		return burner.JobSummary{}, fmt.Errorf("no job summary found")
 	}
-	return summaries[0], nil
+	return burner.JobSummary{}, nil
 }
 
-func prepareChartData(job *Job) []ChartData {
-	// Map key: "metricName:quantileName"
-	chartMap := make(map[string][]DataPoint)
+func prepareChartData(job *Job) []MetricGroup {
+	// First, group by metricName, then by quantileName
+	// Map structure: metricName -> quantileName -> []DataPoint
+	metricMap := make(map[string]map[string][]DataPoint)
 
 	for _, run := range job.Runs {
 		for _, measurement := range run.Measurements {
-			key := fmt.Sprintf("%s:%s", measurement.MetricName, measurement.QuantileName)
+			metricName := measurement.MetricName
+			quantileName := measurement.QuantileName
+
+			// Initialize metric map if needed
+			if metricMap[metricName] == nil {
+				metricMap[metricName] = make(map[string][]DataPoint)
+			}
+
 			dataPoint := DataPoint{
 				Timestamp:  measurement.Timestamp,
 				P99:        measurement.P99,
@@ -492,38 +419,41 @@ func prepareChartData(job *Job) []ChartData {
 				Avg:        measurement.Avg,
 				JobSummary: run.Summary,
 			}
-			chartMap[key] = append(chartMap[key], dataPoint)
+			metricMap[metricName][quantileName] = append(metricMap[metricName][quantileName], dataPoint)
 		}
 	}
 
-	var chartData []ChartData
-	for key, datapoints := range chartMap {
-		// Parse key to get metricName and quantileName
-		parts := strings.Split(key, ":")
-		if len(parts) != 2 {
-			continue
-		}
-		metricName := parts[0]
-		quantileName := parts[1]
+	// Create MetricGroup for each metricName
+	var metricGroups []MetricGroup
+	for metricName, quantileMap := range metricMap {
+		var charts []ChartData
+		for quantileName, datapoints := range quantileMap {
+			sort.Slice(datapoints, func(i, j int) bool {
+				return datapoints[i].Timestamp.Before(datapoints[j].Timestamp)
+			})
 
-		sort.Slice(datapoints, func(i, j int) bool {
-			return datapoints[i].Timestamp.Before(datapoints[j].Timestamp)
+			charts = append(charts, ChartData{
+				MetricName:   metricName,
+				QuantileName: quantileName,
+				Datapoints:   datapoints,
+			})
+		}
+
+		// Sort charts by quantileName
+		sort.Slice(charts, func(i, j int) bool {
+			return charts[i].QuantileName < charts[j].QuantileName
 		})
 
-		chartData = append(chartData, ChartData{
-			MetricName:   metricName,
-			QuantileName: quantileName,
-			Datapoints:   datapoints,
+		metricGroups = append(metricGroups, MetricGroup{
+			MetricName: metricName,
+			Charts:     charts,
 		})
 	}
 
-	// Sort by metricName first, then by quantileName
-	sort.Slice(chartData, func(i, j int) bool {
-		if chartData[i].MetricName != chartData[j].MetricName {
-			return chartData[i].MetricName < chartData[j].MetricName
-		}
-		return chartData[i].QuantileName < chartData[j].QuantileName
+	// Sort metric groups by metricName
+	sort.Slice(metricGroups, func(i, j int) bool {
+		return metricGroups[i].MetricName < metricGroups[j].MetricName
 	})
 
-	return chartData
+	return metricGroups
 }
