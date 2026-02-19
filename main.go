@@ -391,7 +391,8 @@ func loadJobSummary(runPath string) (burner.JobSummary, error) {
 	if len(summaries) == 0 {
 		return burner.JobSummary{}, fmt.Errorf("no job summary found")
 	}
-	return burner.JobSummary{}, nil
+	// It's possible that there are multiple job summaries in the same run, we'll use the first one initially
+	return summaries[0], nil
 }
 
 func prepareChartData(job *Job) []MetricGroup {
