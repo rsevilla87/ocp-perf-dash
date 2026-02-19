@@ -1,0 +1,31 @@
+[
+{
+"achievedQps": 2.0673149244067464,
+"elapsedTime": 19,
+"endTimestamp": "2025-11-23T14:45:06.728856467+01:00",
+"jobConfig": {
+"burst": 2,
+"churnConfig": {},
+"cleanup": true,
+"errorOnVerify": true,
+"gc": false,
+"iterationsPerNamespace": 1,
+"jobIterations": 25,
+"jobType": "create",
+"maxWaitTimeout": 14400000000000,
+"metricsClosing": "afterJobPause",
+"name": "payload-control-plane",
+"namespace": "payload-control-plane",
+"preLoadPeriod": 60000000000,
+"qps": 2,
+"verifyObjects": true,
+"waitForDeletion": true,
+"waitWhenFinished": true
+},
+"metricName": "jobSummary",
+"passed": true,
+"timestamp": "2025-11-23T14:44:42.728856467+01:00",
+"uuid": "8c92a98e-89f8-4a38-b0df-0fb56b9f583c",
+"version": "main@59f19ad445eeb489aa0568db328e332ad9abae2b"
+}
+]

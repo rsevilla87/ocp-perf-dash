@@ -1,0 +1,31 @@
+[
+{
+"achievedQps": 1.0330667178939925,
+"elapsedTime": 22,
+"endTimestamp": "2025-10-27T03:51:23.728856467+01:00",
+"jobConfig": {
+"burst": 2,
+"churnConfig": {},
+"cleanup": true,
+"errorOnVerify": true,
+"gc": false,
+"iterationsPerNamespace": 1,
+"jobIterations": 25,
+"jobType": "create",
+"maxWaitTimeout": 14400000000000,
+"metricsClosing": "afterJobPause",
+"name": "udn-density",
+"namespace": "udn-density",
+"preLoadPeriod": 60000000000,
+"qps": 2,
+"verifyObjects": true,
+"waitForDeletion": true,
+"waitWhenFinished": true
+},
+"metricName": "jobSummary",
+"passed": false,
+"timestamp": "2025-10-27T03:51:01.728856467+01:00",
+"uuid": "5e6a7e55-11ce-4239-a4a4-54df4a01dad7",
+"version": "main@59f19ad445eeb489aa0568db328e332ad9abae2b"
+}
+]

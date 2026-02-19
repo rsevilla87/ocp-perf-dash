@@ -1,0 +1,24 @@
+[
+{
+  "quantileName": "Ready",
+  "uuid": "36e0783e-1804-4f8e-affe-8c148f958997",
+  "P99": 1867593,
+  "P95": 1856488,
+  "P50": 1723817,
+  "max": 1868307,
+  "avg": 1722308,
+  "timestamp": "2023-11-19T00:42:26.663991359Z",
+  "metricName": "svcLatencyQuantilesMeasurement"
+},
+{
+  "quantileName": "LoadBalancer",
+  "uuid": "36e0783e-1804-4f8e-affe-8c148f958997",
+  "P99": 1467593,
+  "P95": 1356488,
+  "P50": 1323817,
+  "max": 2168307,
+  "avg": 1822308,
+  "timestamp": "2023-11-19T00:42:26.663991359Z",
+  "metricName": "svcLatencyQuantilesMeasurement"
+}
+]
