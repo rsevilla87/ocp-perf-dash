@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -428,8 +428,8 @@ func prepareChartData(job *Job) []MetricGroup {
 	for metricName, quantileMap := range metricMap {
 		var charts []ChartData
 		for quantileName, datapoints := range quantileMap {
-			sort.Slice(datapoints, func(i, j int) bool {
-				return datapoints[i].Timestamp.Before(datapoints[j].Timestamp)
+			slices.SortFunc(datapoints, func(a, b DataPoint) int {
+				return a.Timestamp.Compare(b.Timestamp)
 			})
 
 			charts = append(charts, ChartData{
@@ -440,8 +440,8 @@ func prepareChartData(job *Job) []MetricGroup {
 		}
 
 		// Sort charts by quantileName
-		sort.Slice(charts, func(i, j int) bool {
-			return charts[i].QuantileName < charts[j].QuantileName
+		slices.SortFunc(charts, func(a, b ChartData) int {
+			return strings.Compare(a.QuantileName, b.QuantileName)
 		})
 
 		metricGroups = append(metricGroups, MetricGroup{
@@ -451,8 +451,8 @@ func prepareChartData(job *Job) []MetricGroup {
 	}
 
 	// Sort metric groups by metricName
-	sort.Slice(metricGroups, func(i, j int) bool {
-		return metricGroups[i].MetricName < metricGroups[j].MetricName
+	slices.SortFunc(metricGroups, func(a, b MetricGroup) int {
+		return strings.Compare(a.MetricName, b.MetricName)
 	})
 
 	return metricGroups
